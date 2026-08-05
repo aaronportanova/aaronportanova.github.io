@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rubiks Cube Simulator — Aaron Portanova</title>
+  <meta name="description" content="GIS & Geospatial Mapping — Aaron Portanova">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://aaronportanova.com/theme/css/style.css">
+
+</head>
+
+
+
+<body>
+
+  <header class="site-header">
+
+    <div class="wrap header-inner">
+      
+      <a class="brand" href="https://aaronportanova.com/" aria-label="Aaron Portanova — home">
+        <svg class="brand-mark" width="28" height="32" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M14 4c-4.4 0-8 3.4-8 7.6 0 5.7 8 15.4 8 15.4s8-9.7 8-15.4C22 7.4 18.4 4 14 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <circle cx="14" cy="11.6" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+      </a>
+
+      <nav class="site-nav">
+        <!-- <a href="https://aaronportanova.com/photography/">Photography</a> -->
+        <a href="https://aaronportanova.com/about/">About</a>
+      </nav>
+
+    </div>
+
+  </header>
+
+
+
+  <main>
+
+<section class="wrap page-body">
+  <h1 class="page-title">Rubiks Cube Simulator</h1>
+  <nav class="breadcrumb"><a href="https://aaronportanova.com/">Home</a> > <a href="https://aaronportanova.com/projects/">Projects</a> > <span>Rubik's Cube Simulator</span></nav>
+
+<p>Interactive 3x3 Rubik's Cube built with Three.js and WebGL. Drag any sticker to twist
+that layer (the drag direction determines the turn), orbit around it freely, and use
+Scramble/Solve buttons to watch it shuffle and undo itself. It's a self-contained HTML
+file with no build step or backend, ported from an earlier Python/OpenGL desktop version
+of the same simulator.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rubik's Cube</title>
+<style>
+  .rc-wrap {
+    --rc-bg: #17181c;
+    --rc-panel: #212328;
+    --rc-panel-hover: #2b2e35;
+    --rc-text: #e7e7ea;
+    --rc-text-dim: #8b8d94;
+    --rc-accent: #4f8cff;
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--rc-bg);
+    border-radius: 14px;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+  }
+  .rc-wrap * { box-sizing: border-box; }
+  .rc-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .rc-btn {
+    background: var(--rc-panel);
+    color: var(--rc-text);
+    border: 1px solid #35373e;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+  }
+  .rc-btn:hover { background: var(--rc-panel-hover); }
+  .rc-btn:active { transform: scale(0.97); }
+  .rc-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
+  .rc-status {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--rc-text-dim);
+    white-space: nowrap;
+  }
+  .rc-canvas-holder {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 35%, #24262c 0%, #1a1b1f 70%);
+    touch-action: none;
+  }
+  .rc-canvas-holder canvas { display: block; width: 100%; height: 100%; }
+  .rc-help {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--rc-text-dim);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="rc-wrap" id="rcWrap">
+  <div class="rc-toolbar">
+    <button class="rc-btn" id="rcScramble">Scramble</button>
+    <button class="rc-btn" id="rcSolve">Solve</button>
+    <button class="rc-btn" id="rcReset">Reset</button>
+    <span class="rc-status" id="rcStatus">Ready.</span>
+  </div>
+  <div class="rc-canvas-holder" id="rcCanvasHolder"></div>
+  <div class="rc-help">Drag empty space to orbit &nbsp;|&nbsp; drag a sticker to twist &nbsp;|&nbsp; scroll/pinch to zoom</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ======================================================================
+  // Core cube model (state + move math). Verified independently against a
+  // reference implementation before wiring up any rendering - see the
+  // project notes if you're porting this further.
+  // ======================================================================
+  const AXES = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  // Order matches THREE.BoxGeometry's material-group order: +x,-x,+y,-y,+z,-z
+  const LOCAL_NORMALS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+
+  const MOVE_MATRICES = {
+    '0,1': [[1, 0, 0], [0, 0, -1], [0, 1, 0]],
+    '0,-1': [[1, 0, 0], [0, 0, 1], [0, -1, 0]],
+    '1,1': [[0, 0, 1], [0, 1, 0], [-1, 0, 0]],
+    '1,-1': [[0, 0, -1], [0, 1, 0], [1, 0, 0]],
+    '2,1': [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+    '2,-1': [[0, 1, 0], [-1, 0, 0], [0, 0, 1]],
+  };
+
+  function matVec(M, v) {
+    return [
+      M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2],
+      M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2],
+      M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2],
+    ];
+  }
+  function matMat(A, B) {
+    const out = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        out[i][j] = A[i][0] * B[0][j] + A[i][1] * B[1][j] + A[i][2] * B[2][j];
+    return out;
+  }
+
+  // Standard western color scheme: U=white D=yellow F=green B=blue R=red L=orange
+  const FACE_HEX = {
+    '1,0,0': 0xbf1414,   // R red
+    '-1,0,0': 0xf28c00,  // L orange
+    '0,1,0': 0xf2f2f2,   // U white
+    '0,-1,0': 0xf4d51f,  // D yellow
+    '0,0,1': 0x159c3a,   // F green
+    '0,0,-1': 0x1a4fd6,  // B blue
+  };
+  const BODY_HEX = 0x0a0a0c;
+
+  function makeCubies() {
+    const cubies = [];
+    let id = 0;
+    for (const x of [-1, 0, 1]) {
+      for (const y of [-1, 0, 1]) {
+        for (const z of [-1, 0, 1]) {
+          if (x === 0 && y === 0 && z === 0) continue;
+          const colors = [];
+          for (const n of LOCAL_NORMALS) {
+            const painted = (n[0] !== 0 && x === n[0]) || (n[1] !== 0 && y === n[1]) || (n[2] !== 0 && z === n[2]);
+            colors.push(painted ? FACE_HEX[n.join(',')] : null);
+          }
+          cubies.push({ id: id++, pos: [x, y, z], orient: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], colors, mesh: null });
+        }
+      }
+    }
+    return cubies;
+  }
+
+  class Cube {
+    constructor() {
+      this.cubies = makeCubies();
+      this.history = [];
+    }
+    apply(axisIdx, layer, d, record) {
+      if (record === undefined) record = true;
+      const R = MOVE_MATRICES[`${axisIdx},${d}`];
+      for (const c of this.cubies) {
+        if (c.pos[axisIdx] === layer) {
+          c.pos = matVec(R, c.pos);
+          c.orient = matMat(R, c.orient);
+        }
+      }
+      if (record) this.history.push([axisIdx, layer, d]);
+    }
+    cubiesInLayer(axisIdx, layer) {
+      return this.cubies.filter(c => c.pos[axisIdx] === layer);
+    }
+    isSolved() {
+      for (const n of LOCAL_NORMALS) {
+        const key = n.join(',');
+        const seen = new Set();
+        for (const c of this.cubies) {
+          for (let i = 0; i < 6; i++) {
+            const col = c.colors[i];
+            if (col === null) continue;
+            const worldN = matVec(c.orient, LOCAL_NORMALS[i]).map(v => Math.round(v));
+            if (worldN.join(',') === key) seen.add(col);
+          }
+        }
+        if (seen.size > 1) return false;
+      }
+      return true;
+    }
+  }
+
+  // ======================================================================
+  // Rendering + interaction (Three.js)
+  // ======================================================================
+  const SPACING = 1.03;
+  const CUBIE_SIZE = 0.94;
+  const TURN_ANIM_MS = 220;
+  const SCRAMBLE_MOVE_MS = 140;
+  const SOLVE_MOVE_MS = 150;
+
+  function initRubiksCube(root) {
+    const holder = root.querySelector('.rc-canvas-holder');
+    const statusEl = root.querySelector('.rc-status');
+    const btnScramble = root.querySelector('#rcScramble') || root.querySelector('[data-rc="scramble"]');
+    const btnSolve = root.querySelector('#rcSolve') || root.querySelector('[data-rc="solve"]');
+    const btnReset = root.querySelector('#rcReset') || root.querySelector('[data-rc="reset"]');
+
+    const cube = new Cube();
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setClearColor(0x1a1b1f, 1);
+    holder.appendChild(renderer.domElement);
+
+    // camera orbit state
+    let yaw = 35 * Math.PI / 180;
+    let pitch = -25 * Math.PI / 180;
+    let dist = 8.6;
+
+    function updateCamera() {
+      camera.position.set(
+        dist * Math.cos(pitch) * Math.sin(yaw),
+        dist * Math.sin(pitch),
+        dist * Math.cos(pitch) * Math.cos(yaw)
+      );
+      camera.lookAt(0, 0, 0);
+    }
+    updateCamera();
+
+    // build cubie meshes
+    const edgeGeom = new THREE.EdgesGeometry(new THREE.BoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE));
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000 });
+
+    for (const c of cube.cubies) {
+      const geom = new THREE.BoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE);
+      const mats = c.colors.map(col => new THREE.MeshBasicMaterial({ color: col === null ? BODY_HEX : col }));
+      const mesh = new THREE.Mesh(geom, mats);
+      mesh.matrixAutoUpdate = true;
+      const edges = new THREE.LineSegments(edgeGeom, edgeMat);
+      mesh.add(edges);
+      mesh.userData.cubieId = c.id;
+      c.mesh = mesh;
+      scene.add(mesh);
+    }
+
+    function orientMatrix4(orient) {
+      const m = new THREE.Matrix4();
+      m.set(
+        orient[0][0], orient[0][1], orient[0][2], 0,
+        orient[1][0], orient[1][1], orient[1][2], 0,
+        orient[2][0], orient[2][1], orient[2][2], 0,
+        0, 0, 0, 1
+      );
+      return m;
+    }
+
+    function syncMeshTransform(c) {
+      c.mesh.position.set(c.pos[0] * SPACING, c.pos[1] * SPACING, c.pos[2] * SPACING);
+      c.mesh.quaternion.setFromRotationMatrix(orientMatrix4(c.orient));
+    }
+    for (const c of cube.cubies) syncMeshTransform(c);
+
+    // ---- animation / move queue state ----
+    let pendingAnim = null; // {axisIdx, layer, d, startTime, duration, cubieIds:Set, record}
+    let moveQueue = [];
+    let queueKind = null; // 'scramble' | 'solve' | null
+    let interactionMode = null; // null | 'orbit' | 'twist-pending'
+    let dragStart = null;
+    let twistInfo = null; // {cubieId, localIdx}
+
+    function setStatus(msg) { statusEl.textContent = msg; }
+    function setButtonsEnabled(enabled) {
+      [btnScramble, btnSolve, btnReset].forEach(b => { if (b) b.disabled = !enabled; });
+    }
+
+    function startMoveAnimation(axisIdx, layer, d, record) {
+      const cubieIds = new Set(cube.cubiesInLayer(axisIdx, layer).map(c => c.id));
+      const duration = queueKind === 'scramble' ? SCRAMBLE_MOVE_MS : (queueKind === 'solve' ? SOLVE_MOVE_MS : TURN_ANIM_MS);
+      pendingAnim = { axisIdx, layer, d, startTime: performance.now(), duration, cubieIds, record };
+      setButtonsEnabled(false);
+    }
+
+    function updateAnimation() {
+      if (pendingAnim === null) {
+        if (moveQueue.length > 0) {
+          const [axisIdx, layer, d] = moveQueue.shift();
+          const record = queueKind !== 'solve';
+          startMoveAnimation(axisIdx, layer, d, record);
+        } else {
+          setButtonsEnabled(true);
+        }
+        return;
+      }
+      const { axisIdx, layer, d, startTime, duration, record } = pendingAnim;
+      if (performance.now() - startTime >= duration) {
+        cube.apply(axisIdx, layer, d, record);
+        for (const c of cube.cubies) syncMeshTransform(c);
+        pendingAnim = null;
+        if (moveQueue.length === 0) {
+          if (queueKind === 'scramble') {
+            setStatus('Scrambled. Drag a sticker to twist, or click Solve.');
+          } else if (queueKind === 'solve') {
+            if (cube.isSolved()) {
+              cube.history.length = 0;
+              setStatus('Solved!');
+            } else {
+              setStatus("Solve didn't finish cleanly - click Solve again.");
+            }
+          }
+          queueKind = null;
+        }
+      }
+    }
+
+    function renderAnimatedFrame() {
+      if (pendingAnim !== null) {
+        const { axisIdx, d, startTime, duration, cubieIds } = pendingAnim;
+        const t = Math.max(0, Math.min(1, (performance.now() - startTime) / duration));
+        const eased = t * t * (3 - 2 * t);
+        const angleRad = THREE.MathUtils.degToRad(d * 90 * eased);
+        const axisVec = new THREE.Vector3(...AXES[axisIdx]);
+        const q = new THREE.Quaternion().setFromAxisAngle(axisVec, angleRad);
+        for (const c of cube.cubies) {
+          if (!cubieIds.has(c.id)) continue;
+          const basePos = new THREE.Vector3(c.pos[0] * SPACING, c.pos[1] * SPACING, c.pos[2] * SPACING);
+          basePos.applyQuaternion(q);
+          c.mesh.position.copy(basePos);
+          const baseQuat = new THREE.Quaternion().setFromRotationMatrix(orientMatrix4(c.orient));
+          c.mesh.quaternion.copy(q).multiply(baseQuat);
+        }
+      }
+    }
+
+    function queueScramble(n) {
+      if (n === undefined) n = 22;
+      if (moveQueue.length > 0 || pendingAnim !== null) return;
+      // history is intentionally NOT cleared: scramble moves stack on top of
+      // any manual moves already made, so Solve can undo everything back to
+      // the true solved state.
+      const seq = [];
+      let lastAxis = null;
+      for (let i = 0; i < n; i++) {
+        let axisIdx;
+        do { axisIdx = Math.floor(Math.random() * 3); } while (axisIdx === lastAxis);
+        const layer = Math.random() < 0.5 ? -1 : 1;
+        const d = Math.random() < 0.5 ? -1 : 1;
+        seq.push([axisIdx, layer, d]);
+        lastAxis = axisIdx;
+      }
+      moveQueue = seq;
+      queueKind = 'scramble';
+      setStatus('Scrambling...');
+    }
+
+    function queueSolve() {
+      if (moveQueue.length > 0 || pendingAnim !== null) return;
+      if (cube.history.length === 0) {
+        setStatus(cube.isSolved() ? 'Already solved (no moves to undo).' : 'No move history to undo - try Reset.');
+        return;
+      }
+      moveQueue = cube.history.slice().reverse().map(([a, l, d]) => [a, l, -d]);
+      queueKind = 'solve';
+      setStatus('Solving (undoing your moves)...');
+    }
+
+    function resetCube() {
+      for (const c of cube.cubies) scene.remove(c.mesh);
+      cube.cubies = makeCubies();
+      for (const c of cube.cubies) {
+        const geom = new THREE.BoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE);
+        const mats = c.colors.map(col => new THREE.MeshBasicMaterial({ color: col === null ? BODY_HEX : col }));
+        const mesh = new THREE.Mesh(geom, mats);
+        const edges = new THREE.LineSegments(edgeGeom, edgeMat);
+        mesh.add(edges);
+        mesh.userData.cubieId = c.id;
+        c.mesh = mesh;
+        scene.add(mesh);
+        syncMeshTransform(c);
+      }
+      cube.history = [];
+      moveQueue = [];
+      pendingAnim = null;
+      queueKind = null;
+      setStatus('Reset to solved.');
+      setButtonsEnabled(true);
+    }
+
+    function applySingleMove(axisIdx, layer, d) {
+      if (moveQueue.length > 0 || pendingAnim !== null) return;
+      queueKind = null;
+      startMoveAnimation(axisIdx, layer, d, true);
+    }
+
+    // ---- picking + drag-to-twist resolution ----
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+
+    function pick(clientX, clientY) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(ndc, camera);
+      const meshes = cube.cubies.map(c => c.mesh);
+      const hits = raycaster.intersectObjects(meshes, false);
+      if (hits.length === 0) return null;
+      const hit = hits[0];
+      const cubieId = hit.object.userData.cubieId;
+      const localIdx = hit.face.materialIndex;
+      const c = cube.cubies.find(cc => cc.id === cubieId);
+      if (!c || c.colors[localIdx] === null) return null; // interior face -> treat as background
+      return { cubieId, localIdx };
+    }
+
+    function cameraBasis() {
+      const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+      const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+      return { right, up };
+    }
+
+    function resolveTwist(cubieId, localIdx, dragDx, dragDy) {
+      const c = cube.cubies.find(cc => cc.id === cubieId);
+      const worldN = matVec(c.orient, LOCAL_NORMALS[localIdx]).map(v => Math.round(v));
+      const stickerAxis = worldN.findIndex(v => v !== 0);
+      const r = c.pos;
+      const { right, up } = cameraBasis();
+
+      let bestAxis = null, bestD = 1, bestScore = 0;
+      for (let axisIdx = 0; axisIdx < 3; axisIdx++) {
+        if (axisIdx === stickerAxis) continue;
+        const A = AXES[axisIdx];
+        const tA = [
+          A[1] * r[2] - A[2] * r[1],
+          A[2] * r[0] - A[0] * r[2],
+          A[0] * r[1] - A[1] * r[0],
+        ];
+        const tVec = new THREE.Vector3(...tA);
+        const screenX = tVec.dot(right);
+        const screenY = tVec.dot(up);
+        const score = dragDx * screenX + (-dragDy) * screenY;
+        if (Math.abs(score) > Math.abs(bestScore)) {
+          bestScore = score;
+          bestAxis = axisIdx;
+          bestD = score > 0 ? 1 : -1;
+        }
+      }
+      if (bestAxis === null) return null;
+      const layer = Math.round(c.pos[bestAxis]);
+      return [bestAxis, layer, bestD];
+    }
+
+    // ---- pointer event wiring ----
+    const el = renderer.domElement;
+
+    function isBusy() { return moveQueue.length > 0 || pendingAnim !== null; }
+
+    el.addEventListener('pointerdown', (ev) => {
+      if (isBusy()) return;
+      el.setPointerCapture(ev.pointerId);
+      const rect = el.getBoundingClientRect();
+      const x = ev.clientX, y = ev.clientY;
+      const result = pick(x, y);
+      dragStart = { x, y };
+      if (result === null) {
+        interactionMode = 'orbit';
+      } else {
+        interactionMode = 'twist-pending';
+        twistInfo = result;
+      }
+    });
+
+    el.addEventListener('pointermove', (ev) => {
+      if (interactionMode === 'orbit' && dragStart) {
+        const dx = ev.clientX - dragStart.x;
+        const dy = ev.clientY - dragStart.y;
+        yaw -= dx * 0.007;
+        pitch += dy * 0.007;
+        const limit = 89 * Math.PI / 180;
+        pitch = Math.max(-limit, Math.min(limit, pitch));
+        updateCamera();
+        dragStart = { x: ev.clientX, y: ev.clientY };
+      }
+    });
+
+    function endDrag(ev) {
+      if (interactionMode === 'twist-pending' && dragStart && twistInfo) {
+        const dx = ev.clientX - dragStart.x;
+        const dy = ev.clientY - dragStart.y;
+        if (Math.abs(dx) + Math.abs(dy) > 6) {
+          const result = resolveTwist(twistInfo.cubieId, twistInfo.localIdx, dx, dy);
+          if (result) applySingleMove(result[0], result[1], result[2]);
+        }
+      }
+      interactionMode = null;
+      dragStart = null;
+      twistInfo = null;
+    }
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+
+    el.addEventListener('wheel', (ev) => {
+      ev.preventDefault();
+      dist = Math.max(4.5, Math.min(18, dist + ev.deltaY * 0.01));
+      updateCamera();
+    }, { passive: false });
+
+    if (btnScramble) btnScramble.addEventListener('click', () => queueScramble());
+    if (btnSolve) btnSolve.addEventListener('click', () => queueSolve());
+    if (btnReset) btnReset.addEventListener('click', () => resetCube());
+
+    // ---- responsive sizing ----
+    function resize() {
+      const w = holder.clientWidth;
+      const h = holder.clientHeight;
+      if (w === 0 || h === 0) return;
+      renderer.setSize(w, h, false);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resize).observe(holder);
+    resize();
+
+    // ---- main loop ----
+    function tick() {
+      updateAnimation();
+      renderAnimatedFrame();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    return { cube, queueScramble, queueSolve, resetCube };
+  }
+
+  document.querySelectorAll('.rc-wrap').forEach(initRubiksCube);
+})();
+</script>
+</body>
+</html>
+</section>
+
+  </main>
+
+
+
+  <footer class="site-footer">
+
+    <div class="wrap footer-inner">
+
+      <span class="coord">MASSACHUSETTS, USA</span>
+      
+      <span>
+      <a href="https://www.linkedin.com/in/aaronportanova/" target="_blank" rel="noopener" aria-label="LinkedIn" class="icon-link">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.446-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+        </svg>
+      </a>
+
+      <a href="https://github.com/aaronportanova/" target="_blank" rel="noopener" aria-label="GitHub" class="icon-link">
+        <svg width="26" height="26" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+      </span>
+
+      <span>&copy; <span id="currentyear"></span> - Aaron Portanova</span>
+
+      <script>
+        document.getElementById('currentyear').textContent = new Date().getFullYear();
+      </script>
+
+    </div>
+
+  </footer>
+
+</body>
+
+
+</html>

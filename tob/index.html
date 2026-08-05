@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Town of Braintree GIS — Aaron Portanova</title>
+  <meta name="description" content="GIS & Geospatial Mapping — Aaron Portanova">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://aaronportanova.com/theme/css/style.css">
+
+</head>
+
+
+
+<body>
+
+  <header class="site-header">
+
+    <div class="wrap header-inner">
+      
+      <a class="brand" href="https://aaronportanova.com/" aria-label="Aaron Portanova — home">
+        <svg class="brand-mark" width="28" height="32" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M14 4c-4.4 0-8 3.4-8 7.6 0 5.7 8 15.4 8 15.4s8-9.7 8-15.4C22 7.4 18.4 4 14 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <circle cx="14" cy="11.6" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+      </a>
+
+      <nav class="site-nav">
+        <!-- <a href="https://aaronportanova.com/photography/">Photography</a> -->
+        <a href="https://aaronportanova.com/about/">About</a>
+      </nav>
+
+    </div>
+
+  </header>
+
+
+
+  <main>
+
+<section class="wrap page-body">
+  <h1 class="page-title">Town of Braintree GIS</h1>
+  <nav class="breadcrumb"><a href="https://aaronportanova.com/">Home</a> > <a href="https://aaronportanova.com/projects/">Projects</a> > <span>TOB</span></nav>
+
+<p>View in-depth project descriptions on <a href="https://github.com/aaronportanova/tob-projects/blob/main/README.md">Github</a></p>
+<p><br></p>
+<h2>Managing a Drone Program</h2>
+<p>In 2025-2026, I built out a municipal drone program for the Town of Braintree Engineering Department - earning my FAA Part 107 certification through Bridgewater State University's sUAS program and standing up operations around an RTK-enabled DJI Matrice 4E capable of sub-centimeter positional accuracy. I use it to capture 2D orthomosaics and 3D models for site development monitoring, pre/post-paving documentation, and locating buried infrastructure before it's paved over, publishing results through ArcGIS Online for the rest of the organization.</p>
+<p>I've also documented the program's SOPs - file structure, pre-flight checklists, mission reporting, 7-year FOIA-driven data retention, and LAANC airspace approval - so operations are scalable to future remote pilots rather than tied to one person's workflow.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/MANAGING_DRONE_PROGRAM.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Automating Workorders</h2>
+<p>Like many municipalities, Braintree tracks workorders, permits, and billing across separate databases that don't talk to each other, and workorders themselves have historically moved on paper - multiple trips to the office to collect, process, and return information about work done by field staff. It's an awkward process with a single point of failure, since paper copies get lost or damaged along the way. In 2025 I began replacing that loop with an ArcGIS Online web map and Experience Builder app that field staff use to record the jobs they do each day.</p>
+<p>The solution is built on a hosted feature layer with attachments enabled, so a worker can drop a point where the work was done and photograph the job or the paper workorder itself - the same way they already edit our GIS utility data in the field. A GitHub-based automation checks the layer for new records several times per day, pulls the details from them (work start/end, description, worker names, attachments) into an email, and sends it back to the office, where staff can read each job and click through to view its point on the map. That gives office staff a digital source to reference when entering work into the relevant database, removes the need to carry paper back and forth, and preserves the work on a map for future reference.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/AUTOMATING_WORKORDERS.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Analyzing Utility Data</h2>
+<p>EPA's MS4 permit requires municipalities to report volumes of material cleaned from drainage system catchbasins as part of annual reporting. Stormwater field staff record cleaning events in ArcGIS Field Maps, taking three measurements at each basin - clean basin depth (rim to floor, no material), depth to deepest sump (rim to the bottom rim of the deepest outflow pipe), and depth to material (rim to top of sediment) - which together allow us to estimate the volume of material cleaned per basin over time.</p>
+<p>I developed a Python-based tool using the arcpy and arcgis modules to summarize those cleaning events on demand. It's a standalone Tkinter GUI program with buttons for 'catchbasin cleaning analysis' and 'sump depth analysis', reporting the number of catchbasins cleaned, estimated total sediment volume over a specified time interval, and other summaries of the stormwater infrastructure we maintain in ArcGIS Online. It runs on any machine with ArcGIS Pro installed and signed in to Braintree's ArcGIS organization, as long as the member has the required layers shared with them, and the Stormwater department uses it to pull reportable sediment volumes directly.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/ANALYZING_UTILITY_DATA.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Processing Utility Documents</h2>
+<p>As new water and sewer services are connected, documents are produced showing a diagram of the lateral running from the main in the street to the house - these documents are commonly referred to as water or sewer 'tie cards'. Historically they were created and stored in filing cabinets, and copies ended up filed in several places at once, so when someone updated a card the other copies quietly went out of sync. In 2025 I consolidated them into a single authoritative digital archive on Microsoft SharePoint, reorganizing the original water and sewer PDFs into a standard folder scheme: a folder per street, address sub-folders within each, and water, sewer, and sump-pump connection cards filed at the address level, with 'main gate' cards and other street-level records kept at the street level. Field workers, who previously had no way to reach these files from a phone or iPad, now have direct access to view and update them in the field. The archive also served as the source a contractor used to build our EPA lead-removal inventory of water service connections - pipe material, diameter, install date, and whether a service was previously lead - which we now maintain in GIS as our authoritative lead list.</p>
+<p>Merging newly scanned cards into that archive is its own workflow, and with a backlog of several thousand cards to process it was worth automating. I created a Tkinter-based Python program that takes a folder of fresh scans (still carrying whatever random filenames the Xerox assigned), previews them one at a time, and lets the user rename each to our standard convention - <code>100 MAIN ST - WATER CARD</code>, <code>100 MAIN ST - SEWER CARD</code>, and so on. The program then locates the existing SharePoint file by that name and displays both side by side for cropping, page reordering or deletion, and merging, with undo/redo and a preview of the final PDF before committing the save. If no match is found, the user can search manually for a mis-named or misspelled counterpart, or choose 'create' to generate the correct folder, sub-folder, and file in place. That replaced a per-card routine of opening each PDF in Adobe or Bluebeam, cropping, renaming, and hunting down its SharePoint counterpart by hand. These days the cards trickle in a handful at a time and I handle them manually in Bluebeam, but this program is what made the original ~10,000 file backlog manageable.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/PROCESSING_UTILITY_DOCS.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Automating Address and Parcel Updates</h2>
+<p>As GIS Coordinator, I maintain Braintree's tax parcel data to the MassGIS standard, keeping it in sync with the Assessor's office and the Registry of Deeds as properties split, merge, or get reassessed. That work includes managing a master geodatabase of parcels, assessment records, and lookup tables, publishing to ArcGIS Online through a custom delete-and-reload Python script, and generating standardized tax maps with a script tool I built for the purpose.</p>
+<p>I also assign and manage address numbers in GIS and maintain Braintree's Master Address Database, which was built from the MassGIS NextGen 9-1-1 format and stays linked to assessor records through a unique GIS_ID. It integrates with PermitEyes to enforce official address assignment before a permit can be issued, which keeps addressing authoritative at the exact point where bad addresses would otherwise enter the system.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/AUTOMATING_ADDRESS_PARCEL_UPDATES.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Using a Survey-grade GPS</h2>
+<p>In 2025, the Engineering Department purchased an Emlid Reach RX RTK-enabled GPS unit to support GIS data collection workflows. It connects to the MaCORS RTK network over NTRIP to improve positional accuracy to sub-centimeter, and pairs with ArcGIS Field Maps as an external receiver in place of the significantly less capable GPS built into a mobile device.</p>
+<p>Using maps I've produced, staff reposition existing features like fire hydrants and manholes - or add new ones - almost exactly where they sit in real life, which pays off for anyone later looking for an asset buried by ground or snow. We started with one unit to see how easy it was to use and how much use we'd get from it; it was successful enough that we bought a second. The Water &amp; Sewer department uses the original day-to-day, and the Stormwater department uses the other to update our drainage system data, slowly improving the accuracy of our utility datasets over time.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/USING_GPS.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Analyzing Impervious Surfaces</h2>
+<p>The Stormwater department bills a utility fee on residential and non-residential properties, and while residential parcels pay a fixed fee, non-residential parcels are billed on how much impervious surface exists on them. As properties are developed or boundaries change, that number changes too, so it has to be routinely recalculated and compared against historical data to keep our billing database accurate. I produced an automated, parcel-level comparison of impervious surface change using ArcPy geoprocessing workflows and custom scripts, calculating the impervious area that actually exists on each non-residential parcel and comparing it to the value being billed and to prior years.</p>
+<p>Most of the time those numbers align closely, but the analysis surfaces parcels that appear to be over- or under-billed. Often that's an artifact of an imperfect impervious surface dataset, but in some cases it's a genuine billing discrepancy worth investigating. The analysis runs in ArcGIS Pro and exports cleanly to an Excel table that the Stormwater department can use to check parcels against the billing system and update it accordingly.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/ANALYZING_IMPERVIOUS_SURFACES.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Monitoring Hydrant Flushing</h2>
+<p>In 2024 I began developing an ArcGIS Online solution for monitoring fire hydrant flushing operations. Field workers in the Water and Sewer department needed a way to visualize and track flushing on a map, store multiple records per hydrant, and see at a glance which hydrants had been flushed and which hadn't. I worked closely with field staff to understand their needs before architecting a solution that would benefit them in the field as well as office staff.</p>
+<p>The result lets staff view hydrants by flush status, condition, service (i.e. out of order), pressure (i.e. high / low), manufacturer, and other properties. That same information is useful to the Fire Department, which can check current hydrant operation status and pressure to respond to emergencies more effectively.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/MONITORING_HYDRANT_FLUSHING.md"><em>Learn about the full project</em></a></p>
+<hr>
+<h2>Creating a Map Grid and Street Name Index</h2>
+<p>Many of the maps I produce share the same standard layout: a map area with the usual elements (title, legend, scale bar, north arrow, description) and a sidebar street list keyed to a grid on the map (A1, B1, A2, B2, and so on), broken up alphabetically so someone can find a street name and go straight to the right cell. That requires the grid to exist as a feature class, with each cell as a feature, so cell values can be spatially joined to the streets - and it requires every map using it to share the same extent, which I enforce by adding the town boundary polygon to each map (toggled off if necessary) and using ArcGIS Pro's 'fit extent' (Alt + click layer). I drew the initial rectangle from inside an activated map layout so it sized closely to the actual map window element, then used a Python script to divide it into a reasonable grid and enrich it with the correct cell values.</p>
+<p>The street list needed its own cleanup, since our master MassDOT roads dataset often carries multiple features per road (different segments, non-continuous roads). I dissolved a copy of the roads layer on road name to create a single feature per unique name, split that by the grid, then de-duplicated again keeping only the longest segment per name - so each road is labeled in the cell it overlaps most, rather than in every cell it touches. Spatially joining that result back to the grid produces a list of unique street names each tied to a single grid cell value, and a custom Arcade script drives a Text (distinctValues list) layout element that draws the list in the sidebar.</p>
+<p><a href="https://github.com/aaronportanova/tob-projects/blob/main/CREATING_MAP_GRID.md"><em>Learn about the full project</em></a></p>
+</section>
+
+  </main>
+
+
+
+  <footer class="site-footer">
+
+    <div class="wrap footer-inner">
+
+      <span class="coord">MASSACHUSETTS, USA</span>
+      
+      <span>
+      <a href="https://www.linkedin.com/in/aaronportanova/" target="_blank" rel="noopener" aria-label="LinkedIn" class="icon-link">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.446-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+        </svg>
+      </a>
+
+      <a href="https://github.com/aaronportanova/" target="_blank" rel="noopener" aria-label="GitHub" class="icon-link">
+        <svg width="26" height="26" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+      </span>
+
+      <span>&copy; <span id="currentyear"></span> - Aaron Portanova</span>
+
+      <script>
+        document.getElementById('currentyear').textContent = new Date().getFullYear();
+      </script>
+
+    </div>
+
+  </footer>
+
+</body>
+
+
+</html>
