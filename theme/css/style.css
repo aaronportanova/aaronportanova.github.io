@@ -164,7 +164,7 @@ h1, h2, h3 {
 
 .profile-photo {
   width: 15vw;
-  max-width: 150px;
+  max-width: 200px;
   min-width: 96px;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
