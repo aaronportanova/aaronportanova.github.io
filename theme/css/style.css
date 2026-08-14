@@ -630,21 +630,21 @@ h1, h2, h3 {
     position: fixed;
     right: 18px;
     bottom: 18px;
-    z-index: 30;
+    z-index: 50;
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: rgba(22, 55, 77, 0.92);
+    background: var(--surface);
     backdrop-filter: blur(6px);
-    border: 1px solid var(--line);
+    border: 1px solid var(--accent-dim);
     color: var(--ink);
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     transition: color 0.15s ease, border-color 0.15s ease;
   }
   .index-toggle:hover {
     color: var(--accent);
-    border-color: var(--accent-dim);
+    border-color: var(--accent);
   }
   .index-toggle .icon-close { display: none; }
   .index-toggle[aria-expanded="true"] .icon-open { display: none; }
